@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CIRCLE — How Do You Discover Your City?</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0c10;
+    --surface: #141418;
+    --surface2: #1c1c22;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.18);
+    --accent: #7c6dfa;
+    --accent-dim: rgba(124,109,250,0.12);
+    --accent-glow: rgba(124,109,250,0.25);
+    --warm: #f0a070;
+    --text: #e8e6f0;
+    --muted: rgba(232,230,240,0.45);
+    --faint: rgba(232,230,240,0.18);
+    --radius: 6px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1.6;
+    min-height: 100vh;
+    cursor: default;
+  }
+
+  /* ── GRAIN OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  /* ── PROGRESS ── */
+  #progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 0%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--warm));
+    z-index: 999;
+    transition: width 0.4s ease;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    padding: 0 40px;
+    z-index: 100;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    background: rgba(12,12,16,0.85);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: 0.22em;
+    color: var(--accent);
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .header-pill {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 130px 40px 72px;
+    z-index: 1;
+  }
+
+  .hero-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .eyebrow-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  .eyebrow-text {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .hero h1 {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400;
+    font-size: clamp(48px, 8vw, 84px);
+    line-height: 1.0;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    margin-bottom: 28px;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero h1 .serif-warm {
+    font-style: italic;
+    color: var(--warm);
+  }
+
+  .hero-body {
+    font-size: 16px;
+    color: var(--muted);
+    max-width: 500px;
+    font-weight: 300;
+    line-height: 1.8;
+    margin-bottom: 40px;
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: 32px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* ── SURVEY BODY ── */
+  .survey-body {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 40px 120px;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    margin-bottom: 80px;
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.65s ease, transform 0.65s ease;
+  }
+
+  .section.visible { opacity: 1; transform: translateY(0); }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 36px;
+  }
+
+  .section-tag {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(124,109,250,0.2);
+    padding: 4px 10px;
+    border-radius: 2px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── QUESTION ── */
+  .question {
+    margin-bottom: 48px;
+  }
+
+  .q-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .q-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent);
+    opacity: 0.6;
+    letter-spacing: 0.1em;
+    padding-top: 4px;
+    flex-shrink: 0;
+    width: 22px;
+  }
+
+  .q-text {
+    font-family: 'Instrument Serif', serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .q-note {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 300;
+    margin-top: 4px;
+  }
+
+  /* ── OPTIONS ── */
+  .options {
+    padding-left: 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    padding: 13px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    transition: border-color 0.15s, background 0.15s, transform 0.12s;
+    user-select: none;
+  }
+
+  .option:hover {
+    border-color: var(--border-hover);
+    background: var(--surface2);
+    transform: translateX(3px);
+  }
+
+  .option.selected {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .opt-circle {
+    width: 18px; height: 18px;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: transparent;
+    transition: all 0.15s;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .opt-circle::after {
+    content: '';
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .option.selected .opt-circle {
+    border-color: var(--accent);
+  }
+
+  .option.selected .opt-circle::after { opacity: 1; }
+
+  .opt-check {
+    width: 18px; height: 18px;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    border-radius: 3px;
+    flex-shrink: 0;
+    background: transparent;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .option.selected .opt-check {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .opt-check svg { opacity: 0; transition: opacity 0.15s; }
+  .option.selected .opt-check svg { opacity: 1; }
+
+  .opt-text {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  /* ── SCALE ── */
+  .scale-wrap { padding-left: 36px; }
+
+  .scale-btns {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .scale-btn {
+    flex: 1;
+    height: 48px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: var(--radius);
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .scale-btn:hover {
+    border-color: var(--border-hover);
+    color: var(--text);
+    background: var(--surface2);
+  }
+
+  .scale-btn.selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px var(--accent-glow);
+  }
+
+  .scale-labels {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .scale-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  /* ── GRID ── */
+  .grid-scale { padding-left: 36px; overflow-x: auto; }
+
+  .grid-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 460px;
+  }
+
+  .grid-table th {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 10px 8px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .grid-table th:first-child { text-align: left; padding-left: 14px; }
+
+  .grid-table td {
+    padding: 12px 8px;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    font-size: 13px;
+    background: var(--surface);
+  }
+
+  .grid-table tr:last-child td { border-bottom: none; }
+  .grid-table td:first-child {
+    text-align: left;
+    padding-left: 14px;
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 400;
+  }
+
+  .grid-table tr:nth-child(odd) td { background: var(--surface2); }
+
+  .grid-radio {
+    width: 18px; height: 18px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .grid-radio::after {
+    content: '';
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .grid-radio.selected {
+    border-color: var(--accent);
+  }
+
+  .grid-radio.selected::after { opacity: 1; }
+
+  /* ── TEXTAREA ── */
+  .open-text { padding-left: 36px; }
+
+  .open-text textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--surface);
+    resize: vertical;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+    line-height: 1.7;
+  }
+
+  .open-text textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .open-text textarea::placeholder { color: var(--muted); }
+
+  /* ── DIVIDER ── */
+  .q-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 48px 0;
+  }
+
+  /* ── SUBMIT ── */
+  .submit-section {
+    padding: 48px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .submit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 16px 36px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 32px var(--accent-glow);
+  }
+
+  .submit-btn:active { transform: translateY(0); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .submit-arrow {
+    transition: transform 0.2s;
+  }
+
+  .submit-btn:hover .submit-arrow { transform: translateX(4px); }
+
+  .submit-note {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  /* ── THANK YOU ── */
+  #thankyou {
+    display: none;
+    min-height: 80vh;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    padding: 80px 40px;
+    position: relative;
+    z-index: 1;
+  }
+
+  #thankyou.show { display: flex; }
+
+  .ty-ring {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    border: 1px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 32px;
+    position: relative;
+  }
+
+  .ty-ring::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 1px solid rgba(124,109,250,0.2);
+  }
+
+  .ty-check { color: var(--accent); }
+
+  .ty-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(40px, 6vw, 64px);
+    font-weight: 400;
+    font-style: italic;
+    color: var(--text);
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+
+  .ty-body {
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 400px;
+    font-weight: 300;
+    line-height: 1.8;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 40px;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+
+  .footer-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.22em;
+    color: var(--accent);
+    opacity: 0.6;
+  }
+
+  .footer-note {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 300;
+    letter-spacing: 0.03em;
+  }
+
+  /* ── ANIMATIONS ── */
+  .hero {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.8s 0.1s forwards;
+  }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    header { padding: 0 20px; }
+    .hero { padding: 100px 20px 56px; }
+    .survey-body { padding: 0 20px 80px; }
+    .hero-stats { gap: 20px; }
+    footer { flex-direction: column; gap: 8px; text-align: center; padding: 20px; }
+    .scale-btns { gap: 4px; }
+    .scale-btn { height: 42px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<header>
+  <div class="logo">CIRCLE</div>
+  <div class="header-right">
+    <div class="header-pill">5 min · Anonymous</div>
+  </div>
+</header>
+
+<div id="survey-form">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">
+      <div class="eyebrow-dot"></div>
+      <div class="eyebrow-text">Market Research · 2025</div>
+    </div>
+    <h1>How do you<br>discover your<br><em>city?</em></h1>
+    <p class="hero-body">We're building something new — a city discovery app built around curation, not algorithms. Your honest answers shape what we create.</p>
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="stat-val">15</div>
+        <div class="stat-label">Questions</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">5 min</div>
+        <div class="stat-label">To complete</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">100%</div>
+        <div class="stat-label">Anonymous</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="survey-body">
+
+    <!-- SECTION A -->
+    <div class="section" data-section>
+      <div class="section-header">
+        <span class="section-tag">A</span>
+        <span class="section-title">How You Currently Discover the City</span>
+      </div>
+
+      <div class="question" id="q1">
+        <div class="q-header">
+          <span class="q-num">01</span>
+          <div>
+            <div class="q-text">Think about the last time you wanted to find something interesting to do in your city. How did you decide where to go?</div>
+            <div class="q-note">Select all that apply</div>
+          </div>
+        </div>
+        <div class="options" data-multi>
+          <label class="option"><span class="opt-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="opt-text">Asked friends or family</span></label>
+          <label class="option"><span class="opt-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="opt-text">Browsed Instagram / TikTok</span></label>
+          <label class="option"><span class="opt-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="opt-text">Searched Google</span></label>
+          <label class="option"><span class="opt-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="opt-text">Checked an event platform (e.g. Fever, Eventbrite, Time Out)</span></label>
+          <label class="option"><span class="opt-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="opt-text">Followed a local newsletter or blog</span></label>
+          <label class="option"><span class="opt-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="opt-text">Just walked around and explored</span></label>
+          <label class="option"><span class="opt-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="opt-text">Other</span></label>
+        </div>
+      </div>
+
+      <div class="question" id="q2">
+        <div class="q-header">
+          <span class="q-num">02</span>
+          <div class="q-text">How satisfied are you with your ability to discover interesting things to do in your city?</div>
+        </div>
+        <div class="scale-wrap">
+          <div class="scale-btns" data-scale>
+            <button class="scale-btn" data-val="1">1</button>
+            <button class="scale-btn" data-val="2">2</button>
+            <button class="scale-btn" data-val="3">3</button>
+            <button class="scale-btn" data-val="4">4</button>
+            <button class="scale-btn" data-val="5">5</button>
+          </div>
+          <div class="scale-labels">
+            <span class="scale-label">Very unsatisfied</span>
+            <span class="scale-label">Very satisfied</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="question" id="q3">
+        <div class="q-header">
+          <span class="q-num">03</span>
+          <div class="q-text">How often do you feel like you're missing out on cool events or spots in your city?</div>
+        </div>
+        <div class="options" data-single>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Almost never</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Occasionally (a few times a year)</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Regularly (a few times a month)</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Often (weekly or more)</span></label>
+        </div>
+      </div>
+
+      <div class="question" id="q4">
+        <div class="q-header">
+          <span class="q-num">04</span>
+          <div class="q-text">What is the biggest frustration with how you currently discover things to do?</div>
+        </div>
+        <div class="open-text">
+          <textarea placeholder="Tell us in your own words…" rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION B -->
+    <div class="section" data-section>
+      <div class="section-header">
+        <span class="section-tag">B</span>
+        <span class="section-title">Curation & Quality</span>
+      </div>
+
+      <div class="question" id="q5">
+        <div class="q-header">
+          <span class="q-num">05</span>
+          <div class="q-text">Do you follow any curated local sources (newsletters, influencers, community groups) for city recommendations?</div>
+        </div>
+        <div class="options" data-single>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Yes — and I find them very useful</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Yes — but they're hit or miss</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">No — but I'd be interested</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">No — I don't feel the need</span></label>
+        </div>
+      </div>
+
+      <div class="question" id="q6">
+        <div class="q-header">
+          <span class="q-num">06</span>
+          <div class="q-text">How much do you trust the following sources for genuine local recommendations?</div>
+        </div>
+        <div class="grid-scale">
+          <table class="grid-table">
+            <thead>
+              <tr>
+                <th>Source</th>
+                <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-row="trust-google"><td>Google / Maps reviews</td><td><span class="grid-radio" data-col="1"></span></td><td><span class="grid-radio" data-col="2"></span></td><td><span class="grid-radio" data-col="3"></span></td><td><span class="grid-radio" data-col="4"></span></td><td><span class="grid-radio" data-col="5"></span></td></tr>
+              <tr data-row="trust-social"><td>Instagram / TikTok</td><td><span class="grid-radio" data-col="1"></span></td><td><span class="grid-radio" data-col="2"></span></td><td><span class="grid-radio" data-col="3"></span></td><td><span class="grid-radio" data-col="4"></span></td><td><span class="grid-radio" data-col="5"></span></td></tr>
+              <tr data-row="trust-friends"><td>Friends & family</td><td><span class="grid-radio" data-col="1"></span></td><td><span class="grid-radio" data-col="2"></span></td><td><span class="grid-radio" data-col="3"></span></td><td><span class="grid-radio" data-col="4"></span></td><td><span class="grid-radio" data-col="5"></span></td></tr>
+              <tr data-row="trust-newsletter"><td>Curated newsletters</td><td><span class="grid-radio" data-col="1"></span></td><td><span class="grid-radio" data-col="2"></span></td><td><span class="grid-radio" data-col="3"></span></td><td><span class="grid-radio" data-col="4"></span></td><td><span class="grid-radio" data-col="5"></span></td></tr>
+              <tr data-row="trust-event"><td>Event platforms (Fever, Time Out)</td><td><span class="grid-radio" data-col="1"></span></td><td><span class="grid-radio" data-col="2"></span></td><td><span class="grid-radio" data-col="3"></span></td><td><span class="grid-radio" data-col="4"></span></td><td><span class="grid-radio" data-col="5"></span></td></tr>
+            </tbody>
+          </table>
+          <div style="font-size:11px;color:var(--muted);margin-top:10px;font-style:italic;">1 = Low trust &nbsp;·&nbsp; 5 = High trust</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION C -->
+    <div class="section" data-section>
+      <div class="section-header">
+        <span class="section-tag">C</span>
+        <span class="section-title">Social & Community</span>
+      </div>
+
+      <div class="question" id="q7">
+        <div class="q-header">
+          <span class="q-num">07</span>
+          <div class="q-text">When you attend events or visit new spots in the city, how do you usually go?</div>
+        </div>
+        <div class="options" data-single>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Always with existing friends or a partner</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Mostly with people I know, but open to meeting others</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">A mix — happy to go solo or meet new people</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">I often go alone and wouldn't mind meeting people there</span></label>
+        </div>
+      </div>
+
+      <div class="question" id="q8">
+        <div class="q-header">
+          <span class="q-num">08</span>
+          <div class="q-text">Have you ever used an app specifically to meet new people with similar interests? (e.g. Meetup, Timeleft, Bumble BFF)</div>
+        </div>
+        <div class="options" data-single>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Yes — it worked well</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Yes — but it felt awkward or forced</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">No — but I'd consider it</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">No — I'm not interested in meeting strangers through apps</span></label>
+        </div>
+      </div>
+
+      <div class="question" id="q9">
+        <div class="q-header">
+          <span class="q-num">09</span>
+          <div class="q-text">How appealing would it be to see which friends or acquaintances are attending the same event as you?</div>
+        </div>
+        <div class="scale-wrap">
+          <div class="scale-btns" data-scale>
+            <button class="scale-btn" data-val="1">1</button>
+            <button class="scale-btn" data-val="2">2</button>
+            <button class="scale-btn" data-val="3">3</button>
+            <button class="scale-btn" data-val="4">4</button>
+            <button class="scale-btn" data-val="5">5</button>
+          </div>
+          <div class="scale-labels">
+            <span class="scale-label">Not appealing</span>
+            <span class="scale-label">Very appealing</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION D -->
+    <div class="section" data-section>
+      <div class="section-header">
+        <span class="section-tag">D</span>
+        <span class="section-title">Willingness to Pay</span>
+      </div>
+
+      <div class="question" id="q10">
+        <div class="q-header">
+          <span class="q-num">10</span>
+          <div class="q-text">Would you pay for a premium subscription to an app that gave you genuinely curated, high-quality city recommendations?</div>
+        </div>
+        <div class="options" data-single>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Yes, definitely</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Maybe, if the quality was consistently high</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Probably not — I expect this to be free</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">No, I wouldn't pay for this</span></label>
+        </div>
+      </div>
+
+      <div class="question" id="q11">
+        <div class="q-header">
+          <span class="q-num">11</span>
+          <div class="q-text">If yes — what monthly price would feel reasonable?</div>
+        </div>
+        <div class="options" data-single>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Under €3 / month</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">€3 – €6 / month</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">€6 – €10 / month</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">More than €10 / month</span></label>
+        </div>
+      </div>
+
+      <div class="question" id="q12">
+        <div class="q-header">
+          <span class="q-num">12</span>
+          <div>
+            <div class="q-text">Which premium features would make you most likely to pay?</div>
+            <div class="q-note">Select up to 3</div>
+          </div>
+        </div>
+        <div class="options" data-multi data-max="3">
+          <label class="option"><span class="opt-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="opt-text">See who else is attending events (friends or people with similar interests)</span></label>
+          <label class="option"><span class="opt-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="opt-text">Weekly personalised city guide curated by local experts</span></label>
+          <label class="option"><span class="opt-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="opt-text">Exclusive access to invite-only or early-access events</span></label>
+          <label class="option"><span class="opt-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="opt-text">Discover truly hidden gems — off the mainstream algorithm</span></label>
+          <label class="option"><span class="opt-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="opt-text">Chat / connect with people attending the same events</span></label>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION E -->
+    <div class="section" data-section>
+      <div class="section-header">
+        <span class="section-tag">E</span>
+        <span class="section-title">About You</span>
+      </div>
+
+      <div class="question" id="q13">
+        <div class="q-header">
+          <span class="q-num">13</span>
+          <div class="q-text">How long have you lived in your current city?</div>
+        </div>
+        <div class="options" data-single>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Less than 1 year</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">1–3 years</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">3–7 years</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">7+ years</span></label>
+        </div>
+      </div>
+
+      <div class="question" id="q14">
+        <div class="q-header">
+          <span class="q-num">14</span>
+          <div class="q-text">How often do you go out to events, bars, restaurants, or cultural activities per month?</div>
+        </div>
+        <div class="options" data-single>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Rarely (1–2 times)</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Sometimes (3–5 times)</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Often (6–10 times)</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">Very often (10+ times)</span></label>
+        </div>
+      </div>
+
+      <div class="question" id="q15">
+        <div class="q-header">
+          <span class="q-num">15</span>
+          <div class="q-text">Age range</div>
+        </div>
+        <div class="options" data-single>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">18–24</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">25–34</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">35–44</span></label>
+          <label class="option"><span class="opt-circle"></span><span class="opt-text">45+</span></label>
+        </div>
+      </div>
+
+      <div class="question" id="qbonus">
+        <div class="q-header">
+          <span class="q-num" style="color:var(--warm);opacity:1;">✦</span>
+          <div>
+            <div class="q-text">Anything else about how you discover your city you'd like to share?</div>
+            <div class="q-note">Optional</div>
+          </div>
+        </div>
+        <div class="open-text">
+          <textarea placeholder="Your thoughts here…" rows="4"></textarea>
+        </div>
+      </div>
+
+      <div class="submit-section">
+        <button class="submit-btn" id="submit-btn">
+          Submit
+          <svg class="submit-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <p class="submit-note">Anonymous · No account needed · Takes about 5 minutes</p>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- THANK YOU -->
+<div id="thankyou">
+  <div class="ty-ring">
+    <svg class="ty-check" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <div class="ty-title">Thank you.</div>
+  <p class="ty-body">Your input genuinely shapes what we build. We'll be in touch when CIRCLE launches.</p>
+</div>
+
+<footer>
+  <div class="footer-logo">CIRCLE</div>
+  <div class="footer-note">Anonymous · Stored securely · No account needed</div>
+</footer>
+
+<script>
+  // Scroll animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('[data-section]').forEach(s => observer.observe(s));
+
+  // Progress bar
+  window.addEventListener('scroll', () => {
+    const d = document.documentElement;
+    const pct = (d.scrollTop / (d.scrollHeight - d.clientHeight)) * 100;
+    document.getElementById('progress-bar').style.width = pct + '%';
+  });
+
+  // Single select
+  document.querySelectorAll('[data-single]').forEach(group => {
+    group.querySelectorAll('.option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        group.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+      });
+    });
+  });
+
+  // Multi select
+  document.querySelectorAll('[data-multi]').forEach(group => {
+    const max = parseInt(group.dataset.max || '99');
+    group.querySelectorAll('.option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        if (opt.classList.contains('selected')) {
+          opt.classList.remove('selected');
+        } else {
+          if (group.querySelectorAll('.option.selected').length < max) {
+            opt.classList.add('selected');
+          } else {
+            opt.style.borderColor = 'var(--warm)';
+            setTimeout(() => { opt.style.borderColor = ''; }, 500);
+          }
+        }
+      });
+    });
+  });
+
+  // Scale
+  document.querySelectorAll('[data-scale]').forEach(group => {
+    group.querySelectorAll('.scale-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        group.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+      });
+    });
+  });
+
+  // Grid radios
+  document.querySelectorAll('tr[data-row]').forEach(row => {
+    row.querySelectorAll('.grid-radio').forEach(radio => {
+      radio.addEventListener('click', () => {
+        row.querySelectorAll('.grid-radio').forEach(r => r.classList.remove('selected'));
+        radio.classList.add('selected');
+      });
+    });
+  });
+
+  // Collect helpers
+  function getSingle(qId) {
+    const g = document.querySelector('#' + qId + ' [data-single]');
+    if (!g) return '';
+    const s = g.querySelector('.option.selected .opt-text');
+    return s ? s.textContent.trim() : '';
+  }
+
+  function getMulti(qId) {
+    const g = document.querySelector('#' + qId + ' [data-multi]');
+    if (!g) return '';
+    return Array.from(g.querySelectorAll('.option.selected .opt-text')).map(e => e.textContent.trim()).join(', ');
+  }
+
+  function getScale(qId) {
+    const g = document.querySelector('#' + qId + ' [data-scale]');
+    if (!g) return '';
+    const s = g.querySelector('.scale-btn.selected');
+    return s ? s.dataset.val : '';
+  }
+
+  function getGrid(rowId) {
+    const r = document.querySelector('tr[data-row="' + rowId + '"]');
+    if (!r) return '';
+    const s = r.querySelector('.grid-radio.selected');
+    return s ? s.dataset.col : '';
+  }
+
+  // Submit
+  document.getElementById('submit-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('submit-btn');
+    btn.innerHTML = 'Submitting…';
+    btn.disabled = true;
+
+    const q4ta = document.querySelector('#q4 textarea');
+    const bonusta = document.querySelector('#qbonus textarea');
+
+    const payload = {
+      "Timestamp": new Date().toISOString(),
+      "Q1 - How they decided where to go": getMulti('q1'),
+      "Q2 - Satisfaction with discovery (1-5)": getScale('q2'),
+      "Q3 - Frequency of FOMO": getSingle('q3'),
+      "Q4 - Biggest frustration": q4ta ? q4ta.value.trim() : '',
+      "Q5 - Follows curated local sources": getSingle('q5'),
+      "Q6 Trust - Google Maps": getGrid('trust-google'),
+      "Q6 Trust - Instagram TikTok": getGrid('trust-social'),
+      "Q6 Trust - Friends and family": getGrid('trust-friends'),
+      "Q6 Trust - Curated newsletters": getGrid('trust-newsletter'),
+      "Q6 Trust - Event platforms": getGrid('trust-event'),
+      "Q7 - How they usually go out": getSingle('q7'),
+      "Q8 - Used app to meet people": getSingle('q8'),
+      "Q9 - Appeal of seeing whos attending (1-5)": getScale('q9'),
+      "Q10 - Would pay for premium": getSingle('q10'),
+      "Q11 - Price willing to pay": getSingle('q11'),
+      "Q12 - Premium features wanted": getMulti('q12'),
+      "Q13 - Time lived in city": getSingle('q13'),
+      "Q14 - How often goes out per month": getSingle('q14'),
+      "Q15 - Age range": getSingle('q15'),
+      "Bonus - Open feedback": bonusta ? bonusta.value.trim() : ''
+    };
+
+    try {
+      await fetch('/api/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {
+      console.warn('Submit error:', e);
+    }
+
+    document.getElementById('survey-form').style.display = 'none';
+    const ty = document.getElementById('thankyou');
+    ty.classList.add('show');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('progress-bar').style.width = '100%';
+  });
+</script>
+</body>
+</html>
